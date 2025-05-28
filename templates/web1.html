@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockSense.ai - Live Trading Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        body {
+            background-color: #0d0d0f;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            grid-gap: 20px;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            font-size: 28px;
+            color: #3a82f7;
+            margin-bottom: 20px;
+        }
+        .box {
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .select-box select {
+            padding: 10px;
+            width: 100%;
+            background: #0d0d0f;
+            color: white;
+            border: 1px solid #3a82f7;
+            border-radius: 8px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #808080;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">StockSense.ai - Live Trading Platform</div>
+
+    <div class="container">
+        <!-- Left Panel -->
+        <div>
+            <div class="box select-box">
+                <label for="stock">Choose a stock:</label>
+                <select id="stock" onchange="updateStock()">
+                    <option value="AAPL">Apple (AAPL)</option>
+                    <option value="GOOGL">Alphabet (GOOGL)</option>
+                    <option value="MSFT">Microsoft (MSFT)</option>
+                    <option value="AMZN">Amazon (AMZN)</option>
+                    <option value="TSLA">Tesla (TSLA)</option>
+                    <option value="META">Meta (META)</option>
+                    <option value="NVDA">NVIDIA (NVDA)</option>
+                    <option value="NFLX">Netflix (NFLX)</option>
+                    <option value="INTC">Intel (INTC)</option>
+                    <option value="AMD">Advanced Micro Devices (AMD)</option>
+                </select>
+            </div>
+
+            <div class="box" id="market-analysis">
+                <h3>Market Analysis</h3>
+                <p><strong>Support:</strong> <span id="support">Loading...</span></p>
+                <p><strong>Resistance:</strong> <span id="resistance">Loading...</span></p>
+            </div>
+
+            <div class="box">
+                <h3>🤖 Chat with Assistant</h3>
+                <button onclick="redirectToChat()">Go to Chat</button>
+            </div>
+            <!--<h1>Stock Analysis Chatbot</h1>
+            <form id="chat-form" method="POST" action="/chat">
+                <input type="text" id="message" name="message" placeholder="Type 'REPORT: GOOGL'" required>
+                <button type="submit">Send</button>
+            </form>-->
+            <div id="response"></div>
+            <script>
+                const form = document.getElementById('chat-form');
+                const responseDiv = document.getElementById('response');
+        
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    responseDiv.innerHTML = `<pre>${data.response}</pre>`;
+                });
+            </script>
+        </div>
+
+        <!-- Right Panel -->
+        <div>
+            <div class="box">
+                <h3>Live Stock Chart</h3>
+                <div id="tradingview_chart"></div>
+            </div>
+
+            <div class="box" id="sentiment-box">
+                <h3>Stock Sentiment Analysis</h3>
+                <p><strong>Sentiment Score:</strong> <span id="sentiment">Loading...</span></p>
+                <p id="prediction" style="color: #4CAF50;">Prediction: Loading...</p>
+            </div>
+
+            <div class="box" id="news-box">
+                <h3>Latest Stock News</h3>
+                <div id="news-container">
+                    <p>Loading latest news...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">&copy; 2025 StockSense.ai | All Rights Reserved</div>
+
+    <script>
+        function redirectToChat() {
+            window.location.href = '/chat';
+        }
+
+        function updateStock() {
+            const stock = document.getElementById("stock").value;
+            loadChart(stock);
+            fetchNews(stock);
+            fetchSupportResistance(stock);
+            fetchSentiment(stock);
+        }
+
+        function loadChart(stockSymbol) {
+            document.getElementById("tradingview_chart").innerHTML = "";
+            new TradingView.widget({
+                "container_id": "tradingview_chart",
+                "symbol": `NASDAQ:${stockSymbol}`,
+                "width": "100%",
+                "height": 400,
+                "interval": "D",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#0d0d0f",
+                "enable_publishing": false
+            });
+        }
+
+        /*async function fetchSentiment(stock) {
+            try {
+                const response = await fetch("/analyze", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `stock=${stock}`
+                });
+                const data = await response.json();
+                document.getElementById("sentiment").textContent = data.sentiment_label;
+                document.getElementById("prediction").textContent = data.prediction;
+            } catch (error) {
+                console.error("Error fetching sentiment:", error);
+            }
+        }*/
+        async function fetchSentiment(stock) {
+            try {
+                const response = await fetch("/analyze", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `stock=${stock}`
+                });
+        
+                const data = await response.json();
+                console.log("API Response:", data);
+        
+                document.getElementById("sentiment").textContent = data.sentiment_label;
+                document.getElementById("prediction").textContent = data.prediction;
+        
+            } catch (error) {
+                console.error("Error fetching sentiment:", error);
+            }
+        }
+        
+        async function fetchNews(stock) {
+            const apiKey = '7f18a8b195754744b76048cc184febb7';
+            const url = `https://newsapi.org/v2/everything?q=${stock}&apiKey=${apiKey}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            const newsContainer = document.getElementById('news-container');
+            newsContainer.innerHTML = "";
+
+            data.articles.slice(0, 5).forEach(article => {
+                newsContainer.innerHTML += `
+                    <div>
+                        <h4><a href="${article.url}" target="_blank">${article.title}</a></h4>
+                        <p>${article.description}</p>
+                    </div>
+                `;
+            });
+        }
+        async function fetchSupportResistance(stock) {
+            try {
+                const apiUrl = `/stock/${stock}/sr`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+        
+                document.getElementById("support").textContent = `$${data.support}`;
+                document.getElementById("resistance").textContent = `$${data.resistance}`;
+            } catch (error) {
+                console.error("Error fetching support/resistance data:", error);
+                document.getElementById("support").textContent = "N/A";
+                document.getElementById("resistance").textContent = "N/A";
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", function () {
+            loadChart('AAPL'); // Default to Apple
+            fetchNews('AAPL');
+            loadFundamentalWidget('AAPL')
+            fetchSupportResistance('AAPL')
+            fetchSentiment('AAPL');
+
+        });
+        window.onload = () => updateStock();
+    </script>
+</body>
+</html>
